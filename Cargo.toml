@@ -2,12 +2,13 @@
 name = "orangeOS"
 version = "0.1.0"
 edition = "2024"
-
+[lib]
+test = false
 [dependencies]
-# 注意：不要在这里添加任何依赖，除非它们也是 no_std 兼容的
-
+bootloader = "0.9"
 [profile.dev]
 panic = "abort" # 推荐设置，或者使用你自己的 panic handler
-
+test = false
 [profile.release]
 panic = "abort"
+test = false
