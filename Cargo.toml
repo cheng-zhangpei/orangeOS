@@ -1,0 +1,15 @@
+[package]
+name = "orangeOS"
+version = "0.1.0"
+edition = "2024"
+# 这个dependency只能再x86架构下使用咯
+[dependencies]
+#bootloader = "0.9"
+sbi-rt = { version = "0.0.2", features = ["legacy"] } # 内核需要使用SBI的服务
+[profile.dev]
+panic = "abort" # 推荐设置，或者使用你自己的 panic handler
+test = false
+[profile.release]
+panic = "abort"
+test = false
+debug = true

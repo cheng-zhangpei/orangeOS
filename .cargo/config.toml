@@ -1,0 +1,18 @@
+[unstable]
+# 指定需要重新为target平台所编译的crater
+build-std = ["core", "compiler_builtins"]
+# 开启了compiler_builtins内嵌函数库中的内存部分的函数，但是有部分函数会依赖c标准库这个地方并不会启用
+build-std-features = ["compiler-builtins-mem"]
+
+[build]
+# 这样在build的时候就不需要不断传入参数了
+#target = "x86_64-orange_os.json"
+target = "riscv64gc-unknown-none-elf"
+
+
+# 这里定义了我们自己的链接脚本
+
+[target.riscv64gc-unknown-none-elf]
+rustflags = [
+    "-Clink-arg=-Tsrc/linker.ld", "-Cforce-frame-pointers=yes"
+]
