@@ -7,7 +7,8 @@ mod lang_item;
 mod sbi;
 mod console;
 
-// 将内联汇编嵌入代码
+// 将内联汇编嵌入代码，这个地方本质上是程序的入口，而在这个入口中我调用了后面的rust_main来启动内核程序
+
 global_asm!(include_str!("entry.asm"));
 #[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
@@ -19,6 +20,7 @@ pub fn rust_main() -> ! {
 
 
 fn clear_bss() {
+    // 调用c的程序接口，这里的sbss和ebss的值值在linker脚本中定义的bss段的开始地址和结束地址
     unsafe extern "C" {
         fn sbss();
         fn ebss();
