@@ -12,7 +12,7 @@ fn syscall(id: usize,args:[usize; 3]) -> isize {
         inlateout("x10") args[0] => ret,
         in("x11") args[1],
         in("x12") args[2],
-        in("x17") id,
+        in("x17") id, // 这个就是系统调用号
         )
     }
     ret

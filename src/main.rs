@@ -6,10 +6,11 @@ use core::arch::global_asm;
 mod lang_item;
 mod sbi;
 mod console;
-
+mod batch;
 // 将内联汇编嵌入代码，这个地方本质上是程序的入口，而在这个入口中我调用了后面的rust_main来启动内核程序
 
 global_asm!(include_str!("entry.asm"));
+global_asm!(include_str!("link_app.S"));
 #[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
     clear_bss();

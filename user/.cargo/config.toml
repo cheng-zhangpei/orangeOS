@@ -3,5 +3,6 @@ target = "riscv64gc-unknown-none-elf"
 
 [target.riscv64gc-unknown-none-elf]
 rustflags = [
+    # 指定链接脚本、并且指定强制开启栈帧寄存器
     "-Clink-args=-Tsrc/linker.ld", "-Cforce-frame-pointers=yes"
 ]
