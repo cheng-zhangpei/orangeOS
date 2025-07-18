@@ -13,4 +13,4 @@
 *.tar.xz
 *.tar.gz
 # Cargo 增量编译缓存
-Cargo.lock
+os/Cargo.lock

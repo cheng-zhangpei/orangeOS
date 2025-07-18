@@ -22,7 +22,6 @@ KERNEL_ENTRY_PA := 0x80200000
 OBJDUMP := rust-objdump --arch-name=riscv64
 OBJCOPY := rust-objcopy --binary-architecture=riscv64
 
-# Disassembly
 DISASM ?= -x
 # 后面的这些段其实就是有实际的命令的
 build: env $(KERNEL_BIN)
@@ -42,7 +41,6 @@ kernel:
 	@cp src/linker-$(BOARD).ld src/linker.ld
 	@cargo build $(MODE_ARG)
 	@rm src/linker.ld
-
 clean:
 	@cargo clean
 
