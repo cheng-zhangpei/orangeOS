@@ -1,13 +1,19 @@
 #![no_std]
 // 这个语言项是用于标记，main函数得运行是需要底层得runtime作为支撑的，也就是有点类似于程序装载器一样，需要指定程序的入口
 #![no_main]
-use core::arch::global_asm;
+#![feature(panic_info_message)]
 
+#[macro_use]
+mod console;
 mod lang_item;
 mod sbi;
-mod console;
+mod syscall;
+mod trap;
 mod batch;
+mod sync;
+
 // 将内联汇编嵌入代码，这个地方本质上是程序的入口，而在这个入口中我调用了后面的rust_main来启动内核程序
+use core::arch::global_asm;
 
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));

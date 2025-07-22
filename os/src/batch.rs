@@ -1,9 +1,21 @@
-// 这里其实就是一大堆任务加载的参数
+use lazy_static::lazy_static;
+use lazy_static::*;
+use crate::trap::context::TrapContext;
+use core::arch::asm;
+use crate::sync::UPSafeCell;
+// 用户栈大小
 const USER_STACK_SIZE: usize = 4096 * 2;
+// 内核栈大小
 const KERNEL_STACK_SIZE: usize = 4096 * 2;
+
+// 最大运行提交应用数量
 const MAX_APP_NUM: usize = 16;
+// 应用链接地址
 const APP_BASE_ADDRESS: usize = 0x80400000;
+// 应用大小限制
 const APP_SIZE_LIMIT: usize = 0x20000;
+
+
 /*
 应用加载器
 */
@@ -87,4 +99,55 @@ lazy_static! {
             app_start,
         }
     })};
+}
+// 确保这个结构体的起始地址是 4096 的整数倍
+#[repr(align(4096))]
+struct KernelStack {
+    data: [u8; KERNEL_STACK_SIZE],
+}
+
+#[repr(align(4096))]
+struct UserStack {
+    data: [u8; USER_STACK_SIZE],
+}
+// 将两个栈初始化出来
+static USER_STACK: UserStack = UserStack { data: [0; USER_STACK_SIZE] };
+static KERNEL_STACK:KernelStack = KernelStack{data:[0;KERNEL_STACK_SIZE]};
+
+
+impl KernelStack {
+    fn get_sp(&self) -> usize {
+        // 其实就是将起始指针往后移动栈的size
+        self.data.as_ptr() as usize + KERNEL_STACK_SIZE
+    }
+    pub fn push_context(&self, cx :TrapContext) -> &'static mut TrapContext {
+        let cx_ptr = (self.get_sp() - size_of::<TrapContext>()) as *mut TrapContext;
+        unsafe{*cx_ptr = cx;}
+        unsafe { cx_ptr.as_mut().unwrap() }
+    }
+}
+
+impl UserStack {
+    fn get_sp(&self) -> usize {
+        self.data.as_ptr() as usize + USER_STACK_SIZE
+    }
+}
+
+pub fn run_next_app() -> ! {
+    let mut app_manager = APP_MANAGER.exclusive_access();
+    let current_app = app_manager.get_current_app();
+    unsafe {
+        app_manager.load_app(current_app);
+    }
+    app_manager.move_to_next_app();
+    drop(app_manager);
+    // before this we have to drop local variables related to resources manually
+    // and release the resources
+    extern "C" { fn __restore(cx_addr: usize); }
+    unsafe {
+        __restore(KERNEL_STACK.push_context(
+            TrapContext::app_init_context(APP_BASE_ADDRESS, USER_STACK.get_sp())
+        ) as *const _ as usize);
+    }
+    panic!("Unreachable in batch::run_current_app!");
 }
