@@ -13,26 +13,32 @@ mod batch;
 mod sync;
 
 // 将内联汇编嵌入代码，这个地方本质上是程序的入口，而在这个入口中我调用了后面的rust_main来启动内核程序
-use core::arch::global_asm;
+use core::arch::global_asm; // 对lib进行绝对路径的解析前面的mod是相对路径
 
 global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));
 #[unsafe(no_mangle)]
+#[no_mangle]
 pub fn rust_main() -> ! {
     clear_bss();
-    println!("Hello, world!");
-    // 从这里开始就可以出动的触发panic了
-    panic!("Shutdown machine!");
+    println!("[kernel] Hello, world!");
+    // 内核启动之后直接运行用户程序
+    trap::init();
+    batch::init();
+    batch::run_next_app();
 }
 
 
 fn clear_bss() {
-    // 调用c的程序接口，这里的sbss和ebss的值值在linker脚本中定义的bss段的开始地址和结束地址
+    // 调用c的程序接口，
+    //这里的sbss和ebss的值值在linker脚本中定义的bss段的开始地址和结束地址
     unsafe extern "C" {
-        fn sbss();
-        fn ebss();
+        unsafe fn sbss();
+        unsafe fn ebss();
     }
+    // 在rust中我们如果使用裸指针，需要使用unsafe块来包裹起来
     unsafe {
+        // 遍历一段内存空间并且将其中的值设置为0
         core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
             .fill(0);
     }

@@ -19,8 +19,11 @@ use crate::trap::context::TrapContext;
 global_asm!(include_str!("trap.S"));
 
 pub fn init() {
+    // 声明外部汇编函数
     extern "C" { fn __alltraps(); }
     unsafe {
+        // 设置中断向量表地址，这里是直接用riscv封装的地址
+        // all trap 这个函数其实是保存用户上下文之后转到handler里面去处理具体的trap功能
         stvec::write(__alltraps as usize, TrapMode::Direct);
     }
 }

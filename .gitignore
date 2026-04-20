@@ -1,4 +1,6 @@
-/target
+./target
+/os/target
+/user/target
 /qemu-7.0.0.tar.xz
 /qemu-7.0.0
 /riscv64-unknown-elf-gcc-8.3.0-2020.04.1-x86_64-linux-ubuntu14

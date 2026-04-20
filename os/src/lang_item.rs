@@ -13,7 +13,6 @@ fn panic(info: &PanicInfo) -> ! {
     } else {
         println!("Unknown panic");
     }
-
     shutdown(true); // 这个函数必须返回 `!`！
 }
 

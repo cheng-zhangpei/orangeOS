@@ -23,7 +23,6 @@ SECTIONS
         *(.bss .bss.*)
         *(.sbss .sbss.*)
         end_bss = .;
-
     }
     /DISCARD/ : {
         *(.eh_frame)

@@ -7,15 +7,12 @@ use crate::sync::UPSafeCell;
 const USER_STACK_SIZE: usize = 4096 * 2;
 // 内核栈大小
 const KERNEL_STACK_SIZE: usize = 4096 * 2;
-
 // 最大运行提交应用数量
 const MAX_APP_NUM: usize = 16;
 // 应用链接地址
 const APP_BASE_ADDRESS: usize = 0x80400000;
 // 应用大小限制
 const APP_SIZE_LIMIT: usize = 0x20000;
-
-
 /*
 应用加载器
 */
@@ -99,6 +96,14 @@ lazy_static! {
             app_start,
         }
     })};
+}
+// 在主模块中引入我们的batch模块
+pub fn init() {
+    print_app_info();
+}
+
+pub fn print_app_info() {
+    APP_MANAGER.exclusive_access().print_app_info();
 }
 // 确保这个结构体的起始地址是 4096 的整数倍
 #[repr(align(4096))]

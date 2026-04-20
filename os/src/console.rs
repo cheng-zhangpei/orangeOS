@@ -19,10 +19,20 @@ pub fn print(args: fmt::Arguments) {
     // fmt::Arguments是一个编译器提供的宏，用于输出格式化对象
     Stdout.write_fmt(args).unwrap();
 }
-// $fmt: literal：匹配一个字符串字面量
+
+// $fmt: literal：匹配一个字面量字符串，比如 "hello"、"value = {}"。
+// $(, $($arg: tt)+)?：这是一个可选的模式（? 表示 0 次或 1 次）。
+// 开头的 ,：表示如果后面有参数，需要先写一个逗号。
+// $($arg: tt)+：匹配一个或多个 token tree（tt 可以匹配任何表达式、类型、标识符等），每个 arg 捕获一个参数。
+// + 表示至少一个，? 把整个 , 参数列表 变成可选的。
+// 也就是说，print! 可以写成两种形式：
+// print!("hello") —— 没有额外参数，只匹配 $fmt
+// print!("value = {}", x) —— 匹配 $fmt 后，再匹配 , 和参数列表 x
+
 #[macro_export]
 macro_rules! print {
     ($fmt: literal $(, $($arg: tt)+)?) => {
+        // 其实宏内部还是调用了之前使用sbi写的print函数
         $crate::console::print(format_args!($fmt $(, $($arg)+)?));
     }
 }
