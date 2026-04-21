@@ -41,6 +41,8 @@ fn clear_bss() {
     });
 }
 
+
+// 这就有点像c标准库的封装了hh
 use syscall::*;
 
 pub fn write(fd: usize, buf: &[u8]) -> isize {

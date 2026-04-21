@@ -23,7 +23,7 @@ static TARGET_PATH: &str = "../user/target/riscv64gc-unknown-none-elf/release/";
 // 生成 link_app.S 的核心函数
 fn insert_app_data() -> Result<()> {
     // 创建（或覆盖）src/link_app.S 文件
-    let mut f = File::create("src/link_app.S").unwrap();
+    let mut f = File::create("link_app.S").unwrap();
     // 读取 ../user/src/bin 目录下所有文件名（即用户程序的 rust 源文件）
     let mut apps: Vec<_> = read_dir("../user/src/bin")
         .unwrap()
@@ -78,3 +78,4 @@ app_{0}_end:"#,
     }
     Ok(())
 }
+

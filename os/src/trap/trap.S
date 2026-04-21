@@ -16,14 +16,14 @@ __alltraps:
     # allocate a TrapContext on kernel stack
     addi sp, sp, -34*8
     #=============================保存通用寄存器================================
-    sd x1, 1*8(sp) # 这个意思是偏移8个字节的意思，因为riscv是64bit架构，一个寄存器是64位的
+    sd x1, 1*8(sp) # 1*8(sp)这种表达的意思是自sp指针起的的八个字节的位置，因为一个寄存器的数据需要8个字节来保存所以这里需要去分配八个字节的空间
     # skip sp(x2), we will save it later，所以中间空出来了一个寄存器
     sd x3, 3*8(sp)
     # skip tp(x4), application does not use it
-    # save x5~x31
+    # save x5~x31 
     .set n, 5
-    .rept 27
-        SAVE_GP %n
+    .rept 27 // 重复数量
+        SAVE_GP %n # 就是讲寄存器放到栈中去，sd是用于将字节保存到栈中的
         .set n, n+1
     .endr
     #====================保存状态寄存器中的两个寄存器用于trap的恢复===============
@@ -48,12 +48,12 @@ __alltraps:
 __restore:
     # case1: start running app by __restore
     # case2: back to U after handling trap
-    mv sp, a0
+    mv sp, a0   # 这个位置的sp其实就是传入的参数，这个就是将a0中的TrapContext的地址放到sp中去
     # =================================把trap的三个状态寄存器从栈里面拿出来=====================
     ld t0, 32*8(sp)
     ld t1, 33*8(sp)
     ld t2, 2*8(sp)
-    csrw sstatus, t0
+    csrw sstatus, t0 # csrw 这个指令是专门用来写状态寄存器的
     csrw sepc, t1
     csrw sscratch, t2
     # ==================================恢复通用===================================

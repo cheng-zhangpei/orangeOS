@@ -17,12 +17,11 @@ const APP_SIZE_LIMIT: usize = 0x20000;
 应用加载器
 */
 struct AppManager {
-    num_app: usize,
+    num_app: usize,  // 系统中需要哦加载的
     current_app: usize,
     app_start: [usize; MAX_APP_NUM + 1],
 }
-// lazy_static! 是一个 宏（macro） ，允许在 运行时初始化一个 静态变量（static） 。
-// 所以这个变量是运行时才会被加载出的，初试状态下并不会初始化这个变量
+
 impl AppManager {
     pub fn print_app_info(&self) {
         // 打印应用程序 i 的起始地址和结束地址
@@ -33,7 +32,7 @@ impl AppManager {
             println!("[kernel] app_{} [{:#x}, {:#x})", i, self.app_start[i], self.app_start[i + 1]);
         }
     }
-    // 外界主动调用这个函数来上传某一个应用
+    // 外界主动调用这个函数来上传某一个应用=> 这个函数运行完之后就是将现在要执行的APP丢到一个专门的运行区里面但是似乎现在还没有涉及执行是吧
     unsafe fn load_app(&self, app_id: usize) {
         // 检查 app_id 是否合法（不能超过应用程序总数）
         if app_id >= self.num_app {
@@ -45,8 +44,8 @@ impl AppManager {
         //  在 RISC-V 架构中，当内存内容被修改后，CPU 可能还在使用旧的缓存指令，需要刷新。在riscv架构下是指令缓存和数据缓存分离的
         asm!("fence.i");
         // 将应用程序的内存区域清零
-        // APP_BASE_ADDRESS 是应用程序的加载地址
-        // APP_SIZE_LIMIT 是应用程序的最大大小
+        //  是应用程序的加载地址
+        // APP_SIZE_APP_BASE_ADDRESSLIMIT 是应用程序的最大大小
         // from_raw_parts_mut 创建一个可变的原始内存切片
         // fill(0) 将这段内存全部填充为 0
         core::slice::from_raw_parts_mut(
@@ -56,7 +55,7 @@ impl AppManager {
         // 把这个应用程序的源码从内存切片里面取出来
         let app_src = core::slice::from_raw_parts(
             self.app_start[app_id] as *const u8,
-            self.app_start[app_id + 1] - self.app_start[app_id]
+            self.app_start[app_id + 1] - self.app_start[app_id] // 两个app之间的地址差
         );
         // 准备将程序复制到目标地址（APP_BASE_ADDRESS）
         // 大小和源程序相同
@@ -74,6 +73,8 @@ impl AppManager {
     }
 }
 
+// lazy_static! 是一个 宏（macro） ，允许在 运行时初始化一个 静态变量（static） 。
+// 所以这个变量是运行时才会被加载出的，初试状态下并不会初始化这个变量
 lazy_static! {
     // 这里就是创建一个不能被多次借用的AppManager变量
     static ref APP_MANAGER: UPSafeCell<AppManager> = unsafe { UPSafeCell::new({
@@ -148,11 +149,18 @@ pub fn run_next_app() -> ! {
     drop(app_manager);
     // before this we have to drop local variables related to resources manually
     // and release the resources
-    extern "C" { fn __restore(cx_addr: usize); }
+    unsafe extern "C" { unsafe fn __restore(cx_addr: usize); }
+    /*
+TrapContext::app_init_context(...) → 创建一个新的 TrapContext（初始寄存器状态）。
+
+KERNEL_STACK.push_context(...) → 把这个 TrapContext 放到内核栈上，返回它在内核栈上的地址（usize）。
+
+as *const _ as usize → 把地址转成 usize（因为 __restore 接受 usize）。
+
+__restore(...) → 调用汇编函数，从该地址恢复上下文，并跳转到用户程序。 */
     unsafe {
-        __restore(KERNEL_STACK.push_context(
-            TrapContext::app_init_context(APP_BASE_ADDRESS, USER_STACK.get_sp())
-        ) as *const _ as usize);
+        __restore(KERNEL_STACK.push_context(TrapContext::app_init_context(APP_BASE_ADDRESS, USER_STACK.get_sp())) 
+        as *const _ as usize); // 将地址转化为usize
     }
     panic!("Unreachable in batch::run_current_app!");
 }
