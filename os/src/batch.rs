@@ -3,16 +3,6 @@ use lazy_static::*;
 use crate::trap::context::TrapContext;
 use core::arch::asm;
 use crate::sync::UPSafeCell;
-// 用户栈大小
-const USER_STACK_SIZE: usize = 4096 * 2;
-// 内核栈大小
-const KERNEL_STACK_SIZE: usize = 4096 * 2;
-// 最大运行提交应用数量
-const MAX_APP_NUM: usize = 16;
-// 应用链接地址
-const APP_BASE_ADDRESS: usize = 0x80400000;
-// 应用大小限制
-const APP_SIZE_LIMIT: usize = 0x20000;
 /*
 应用加载器
 */
