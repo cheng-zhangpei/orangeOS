@@ -3,15 +3,20 @@
 #![no_main]
 #![feature(panic_info_message)]
 
+
 #[macro_use]
 mod console;
-mod lang_item;
-mod sbi;
-mod syscall;
-mod trap;
 mod config;
-mod batch;
+mod lang_items;
+mod loader;
+mod logging;
+mod sbi;
 mod sync;
+pub mod syscall;
+pub mod task;
+mod timer;
+pub mod trap;
+
 // 将内联汇编嵌入代码，这个地方本质上是程序的入口，而在这个入口中我调用了后面的rust_main来启动内核程序
 use core::arch::global_asm; // 对lib进行绝对路径的解析前面的mod是相对路径
 
@@ -19,14 +24,19 @@ global_asm!(include_str!("entry.asm"));
 global_asm!(include_str!("link_app.S"));
 #[unsafe(no_mangle)]
 #[no_mangle]
+#[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
     clear_bss();
-    println!("[kernel] Hello, world!");
-    // 内核启动之后直接运行用户程序
+    logging::init();
+    info!("[kernel] Hello, world!");
     trap::init();
-    batch::init();
-    batch::run_next_app();
+    loader::load_apps();
+    trap::enable_timer_interrupt();
+    timer::set_next_trigger();
+    task::run_first_task();
+    panic!("Unreachable in rust_main!");
 }
+
 
 
 fn clear_bss() {

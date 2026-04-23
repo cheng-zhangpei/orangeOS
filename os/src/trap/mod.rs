@@ -10,11 +10,12 @@ use riscv::register::{
     },
     stval,
 };
-use crate::syscall;
-use crate::batch::run_next_app;
+
 use core::arch::global_asm;
 use crate::syscall::syscall;
 use crate::trap::context::TrapContext;
+use crate::syscall;
+use crate::loader::run_next_app;
 
 global_asm!(include_str!("trap.S"));
 

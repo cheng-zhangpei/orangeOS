@@ -22,3 +22,20 @@ pub fn shutdown(failure : bool) -> !{
     // 告诉编译器这条指令是不能执行的
     unreachable!()
 }
+
+
+const SBI_SET_TIMER: usize = 0;
+
+pub fn set_timer(timer: usize) {
+    sbi_call(SBI_SET_TIMER, timer, 0, 0);
+}
+
+// os/src/timer.rs
+
+use crate::config::CLOCK_FREQ;
+const TICKS_PER_SEC: usize = 100;
+// 每次出发时钟中断的间隔
+pub fn set_next_trigger() {
+    // CLOCK_FREQ / TICKS_PER_SEC的意思其实就是10ms内会有多少次脉冲
+    set_timer(get_time() + CLOCK_FREQ / TICKS_PER_SEC);
+}
