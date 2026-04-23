@@ -3,6 +3,8 @@ use lazy_static::*;
 use crate::trap::context::TrapContext;
 use core::arch::asm;
 use crate::sync::UPSafeCell;
+use crate::config::*;
+
 /*
 应用加载器
 */

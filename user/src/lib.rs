@@ -51,3 +51,5 @@ pub fn write(fd: usize, buf: &[u8]) -> isize {
 pub fn exit(exit_code: i32) -> isize {
     sys_exit(exit_code)
 }
+// 这个函数的作用就是让当前进程放弃CPU的使用权，进入就绪状态，让调度器去调度其他进程
+pub fn yield_() -> isize { sys_yield() }

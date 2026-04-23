@@ -9,9 +9,9 @@ mod lang_item;
 mod sbi;
 mod syscall;
 mod trap;
+mod config;
 mod batch;
 mod sync;
-
 // 将内联汇编嵌入代码，这个地方本质上是程序的入口，而在这个入口中我调用了后面的rust_main来启动内核程序
 use core::arch::global_asm; // 对lib进行绝对路径的解析前面的mod是相对路径
 
