@@ -48,3 +48,70 @@ riscv中断表
 RISC-V 架构要求处理器要有一个内置时钟，其频率一般低于 CPU 主频。此外，还有一个计数器用来统计处理器自上电以来经过了多少个内置时钟的时钟周期。在 RISC-V 64 架构上，该计数器保存在一个 64 位的 CSR `mtime` 中，我们无需担心它的溢出问题，在内核运行全程可以认为它是一直递增的。
 
 > 为啥频率更低其实是因为频率高的话耗电啊，而且有没有必要做那么高的频率？似乎没必要，那么高精度反而会增加能耗
+
+## 抢占式调度
+
+有了时钟中断和计时器，抢占式调度就很容易实现了：
+
+```rust
+// os/src/trap/mod.rs
+
+match scause.cause() {
+    Trap::Interrupt(Interrupt::SupervisorTimer) => {
+        set_next_trigger();
+        suspend_current_and_run_next();
+    }
+}
+```
+
+我们只需在 `trap_handler` 函数下新增一个条件分支跳转，当发现触发了一个 S 特权级时钟中断的时候，首先重新设置一个 10ms 的计时器，然后调用上一小节提到的 `suspend_current_and_run_next` 函数暂停当前应用并切换到下一个。
+
+为了避免 S 特权级时钟中断被屏蔽，我们需要在执行第一个应用之前进行一些初始化设置：
+
+```rust
+#[no_mangle]
+pub fn rust_main() -> ! {
+    clear_bss();
+    println!("[kernel] Hello, world!");
+    trap::init();
+    loader::load_apps();
+    trap::enable_timer_interrupt();
+    timer::set_next_trigger();
+    task::run_first_task();
+    panic!("Unreachable in rust_main!");
+}
+
+// os/src/trap/mod.rs
+
+use riscv::register::sie;
+
+pub fn enable_timer_interrupt() {
+    unsafe { sie::set_stimer(); }
+}
+```
+
+- 第 9 行设置了 `sie.stie` 使得 S 特权级时钟中断不会被屏蔽；
+- 第 10 行则是设置第一个 10ms 的计时器。
+
+> 这里稍微标注一下，似乎当时学这个位置的很多人都有点疑问，
+>
+> | **SIE**  | Supervisor Interrupt Enable          | **当前是否开启 S 模式中断**。1 = 开启，0 = 关闭。   |
+> | -------- | ------------------------------------ | --------------------------------------------------- |
+> | **SPIE** | Supervisor Previous Interrupt Enable | **进入 trap 之前的 SIE 值**，用于 trap 返回时恢复。 |
+> | **SPP**  | Supervisor Previous Privilege Mode   | **进入 trap 之前的特权级**：0 = U，1 = S。          |
+
+当 CPU 从 U 或 S 模式进入 S 模式的 trap（比如时钟中断、ecall）：
+
+1. `sstatus.SPIE` = `sstatus.SIE`（保存当前中断使能状态）
+2. `sstatus.SIE` = 0（**自动关闭 S 模式中断**，避免嵌套）
+3. `sstatus.SPP` = 进入 trap 之前的模式（U 或 S）
+
+这样设计是为了**默认禁止中断嵌套**，简化内核编程。
+
+所以只要是进入S状态的Trap，不管是时钟还是ecall都会禁止嵌套。
+
+| 当前特权级 | 中断是否响应                                                 |
+| :--------- | :----------------------------------------------------------- |
+| U 模式     | 即使 `SIE=0`，**来自 S 模式的中断仍然会触发 trap**。因为中断的目标特权级是 S，不是 U。 |
+| S 模式     | `SIE=0` 时，**S 模式的中断被屏蔽**，不会响应。               |
+
